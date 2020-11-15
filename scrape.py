@@ -30,28 +30,26 @@ def grabTagClassesCallback(tag):
         return tag['class']
     return False
 
+def grabTagIdsCallback(tag):
+    if tag.has_attr('id'):
+        return tag['id']
+    return False
+
 
 
 def findItemsNewToList(referenceList, listToFindNew): # returns items that appear in listToFindNew but not in referenceList
-    # print(referenceList)
-    # print('lists ---------------------------------')
-    # print(listToFindNew)
     formattedListToFindNew = []
     for item in listToFindNew:
         if type(item) == list:
             formattedListToFindNew += item
         else:
             formattedListToFindNew.append(item)
-    print('lists ---------------------------------')
-    print(formattedListToFindNew)
     mainListSet = set(referenceList)
     newItemsListSet = set(formattedListToFindNew)
     listOfNewItemsToAdd = list(newItemsListSet - mainListSet)
     return listOfNewItemsToAdd
 
 def combineLists(referenceList, listToAdd):
-    # print('list is: --------')
-    # print(referenceList)
     return referenceList + findItemsNewToList(referenceList, listToAdd)
 
 
@@ -64,10 +62,6 @@ def initScrapeDbCategories(callbacksDictionary):
 
 def updateDbCategory(categoryTitle, categoryResultsList):
     oldCategoryInfo = scrapeDB.search(Query().type == categoryTitle)[0][categoryTitle]
-    # print('Old category info is: --------')
-    # print(oldCategoryInfo)
-    # print('results are: --------')
-    # print(categoryResultsList)
     updatedCategoryInfo = combineLists(oldCategoryInfo, categoryResultsList)
     scrapeDB.update({categoryTitle : updatedCategoryInfo}, Query().type == categoryTitle)
 
@@ -102,7 +96,7 @@ def grabLinksAndClassesFromPage(formattedUrl, callbacksDictionary):
 
 
 
-grabLinksAndClassesFromPage(completeUrlString,  {'urls':grabTagUrlCallback, 'classes':grabTagClassesCallback})
+grabLinksAndClassesFromPage(completeUrlString,  {'urls':grabTagUrlCallback, 'ids': grabTagIdsCallback, 'classes':grabTagClassesCallback})
 
 
 
