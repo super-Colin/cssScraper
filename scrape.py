@@ -15,8 +15,8 @@ scrapeDB = TinyDB(scrapeDBString)
 
 
 
-def makeSoup(url):
-    resp = requests.get(url)
+def makeSoup(formattedUrl):
+    resp = requests.get(formattedUrl)
     return BeautifulSoup(resp.text, 'lxml')
 
 
@@ -25,18 +25,52 @@ def grabTagUrlCallback(tag):
         return tag['href']
     return False
 
-def grabTagClassCallback(tag):
+def grabTagClassesCallback(tag):
     if tag.has_attr('class'):
         return tag['class']
     return False
 
 
 
+def findItemsNewToList(referenceList, listToFindNew): # returns items that appear in listToFindNew but not in referenceList
+    # print(referenceList)
+    # print('lists ---------------------------------')
+    # print(listToFindNew)
+    formattedListToFindNew = []
+    for item in listToFindNew:
+        if type(item) == list:
+            formattedListToFindNew += item
+        else:
+            formattedListToFindNew.append(item)
+    print('lists ---------------------------------')
+    print(formattedListToFindNew)
+    mainListSet = set(referenceList)
+    newItemsListSet = set(formattedListToFindNew)
+    listOfNewItemsToAdd = list(newItemsListSet - mainListSet)
+    return listOfNewItemsToAdd
+
+def combineLists(referenceList, listToAdd):
+    # print('list is: --------')
+    # print(referenceList)
+    return referenceList + findItemsNewToList(referenceList, listToAdd)
 
 
 
-# def addToDBWithoutDuplicates(): # Expects list
-#     scrapeDB.insert({"urls":'urls'})
+def initScrapeDbCategories(callbacksDictionary):
+    for title in callbacksDictionary:
+        if not scrapeDB.search(Query().type == title):
+            scrapeDB.insert({'type' : title, title : []})
+
+
+def updateDbCategory(categoryTitle, categoryResultsList):
+    oldCategoryInfo = scrapeDB.search(Query().type == categoryTitle)[0][categoryTitle]
+    # print('Old category info is: --------')
+    # print(oldCategoryInfo)
+    # print('results are: --------')
+    # print(categoryResultsList)
+    updatedCategoryInfo = combineLists(oldCategoryInfo, categoryResultsList)
+    scrapeDB.update({categoryTitle : updatedCategoryInfo}, Query().type == categoryTitle)
+
 
 
 
@@ -52,24 +86,23 @@ def parseSoupWithCallbacks( beautifulSoup, dictionaryOfCallbacks = {}):
             callbackResult = dictionaryOfCallbacks[callbackTitle](tag)
             if callbackResult:
                 parseResults[callbackTitle].append(callbackResult)
-                
-            # print(callbackTitle)
-            # print(dictionaryOfCallbacks[callbackTitle])
 
-    print(parseResults)
+    return parseResults # returns the results in a dictionary with results with the same callBackTitle
 
 
 
-parseSoupWithCallbacks(makeSoup(completeUrlString), {'urls':grabTagUrlCallback, 'classes':grabTagClassCallback}, )
+def grabLinksAndClassesFromPage(formattedUrl, callbacksDictionary):
+    initScrapeDbCategories(callbacksDictionary)
+    soup = makeSoup(formattedUrl)
+    parseResults = parseSoupWithCallbacks(soup, callbacksDictionary)
+    for item in parseResults:
+        updateDbCategory(item, parseResults[item])
+    # updateDbCategory()
 
 
 
 
-# def scrapeSoupForUrls(soup):  # expects BeautifulSoup
-#     pageUrls = []
-#     for link in soup.body.find_all('a'):
-#         pageUrls.append(link.get('href'))
-#     return pageUrls  # returns a list
+grabLinksAndClassesFromPage(completeUrlString,  {'urls':grabTagUrlCallback, 'classes':grabTagClassesCallback})
 
 
 
