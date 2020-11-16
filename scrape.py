@@ -1,6 +1,5 @@
 
 import requests
-import re  # regex for later, native to python
 from bs4 import BeautifulSoup
 
 from tinydb import TinyDB, Query  # "pip install -U tinydb"
