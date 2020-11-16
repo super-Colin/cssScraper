@@ -7,7 +7,7 @@ from tinydb import TinyDB, Query  # "pip install -U tinydb"
 
 domainUrlString = 'supercolin.dev'
 scrapeDBString = './' + domainUrlString + '.json'
-completeUrlString = 'https://www.' + domainUrlString
+completeUrlString = 'https://' + domainUrlString
 
 open( scrapeDBString, 'w')
 
@@ -69,7 +69,7 @@ def updateDbCategory(categoryTitle, categoryResultsList):
 
 
 
-def parseSoupWithCallbacks( beautifulSoup, dictionaryOfCallbacks = {}):
+def parseSoupAllTagsWithCallbacks( beautifulSoup, dictionaryOfCallbacks = {}):
     parseResults = {}
     for callbackTitle in dictionaryOfCallbacks:
         parseResults[callbackTitle] = []
@@ -85,18 +85,39 @@ def parseSoupWithCallbacks( beautifulSoup, dictionaryOfCallbacks = {}):
 
 
 
-def grabLinksAndClassesFromPage(formattedUrl, callbacksDictionary):
+def runCallbacksOnPageUpdateDb(formattedUrl, callbacksDictionary):
     initScrapeDbCategories(callbacksDictionary)
     soup = makeSoup(formattedUrl)
-    parseResults = parseSoupWithCallbacks(soup, callbacksDictionary)
+    parseResults = parseSoupAllTagsWithCallbacks(soup, callbacksDictionary)
     for item in parseResults:
         updateDbCategory(item, parseResults[item])
-    # updateDbCategory()
+
+
+def loopThroughPagesAllTags(listOfFormattedPageUrls, callbacksDictionary):
+    pagesCategory = 'pagesVisited'
+    initScrapeDbCategories(pagesCategory)
+    for pageLink in listOfFormattedPageUrls:
+        runCallbacksOnPageUpdateDb(pageLink, callbacksDictionary)
+        pastVisited = scrapeDB.search(Query().type == pagesCategory)
+        allVisited = pastVisited.append(pageLink)
+        scrapeDB.update({pagesCategory: allVisited}, Query().type == pagesCategory)
 
 
 
+# runCallbacksOnPageUpdateDb(completeUrlString,  {
+#     # 'urls': grabTagUrlCallback,
+#     'ids': grabTagIdsCallback,
+#     'classes': grabTagClassesCallback
+# })
 
-grabLinksAndClassesFromPage(completeUrlString,  {'urls':grabTagUrlCallback, 'ids': grabTagIdsCallback, 'classes':grabTagClassesCallback})
+loopThroughPagesList = [
+    'https://supercolin.dev/open-circuit-and-short-circuit/',
+    'https://supercolin.dev/thevenin-equivalent-and-norton-equivalent-circuits/'
+]
+loopThroughPagesAllTags(loopThroughPagesList,  {
+    'ids': grabTagIdsCallback,
+    'classes': grabTagClassesCallback
+})
 
 
 
